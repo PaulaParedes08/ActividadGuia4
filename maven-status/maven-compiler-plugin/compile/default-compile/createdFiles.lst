@@ -1,0 +1,6 @@
+sistema\repository\EstadoEnvioRepository.class
+sistema\controller\LogisticaController.class
+sistema\model\EstadoEnvio.class
+sistema\SistemaApplication.class
+sistema\repository\PedidoRepository.class
+sistema\model\Pedido.class

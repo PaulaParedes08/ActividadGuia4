@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechLogistics S.A. - Panel de Control</title>
+    <!-- Bootstrap para diseño profesional rápido -->
+    <link href="https://jsdelivr.net" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .navbar-brand { font-weight: bold; }
+        .card { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container">
+            <span class="navbar-brand">🚚 TechLogistics S.A. | Sistema de Seguimiento</span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row">
+            <!-- COLUMNA 1: GESTIÓN DE PEDIDOS -->
+            <div class="col-md-6 mb-4">
+                <div class="card p-4">
+                    <h4 class="mb-3 text-primary">📋 Registro de Pedidos</h4>
+                    <button class="btn btn-success mb-3" onclick="cargarPedidos()">🔄 Cargar / Actualizar Lista</button>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cliente</th>
+                                <th>Total</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-pedidos">
+                            <tr><td colspan="4" class="text-center text-muted">Haz clic en cargar pedidos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- COLUMNA 2: RASTREO EN TIEMPO REAL -->
+            <div class="col-md-6 mb-4">
+                <div class="card p-4">
+                    <h4 class="mb-3 text-danger">📍 Rastreo en Tiempo Real</h4>
+                    <div class="input-group mb-3">
+                        <input type="number" id="input-id-pedido" class="form-control" placeholder="Ingresa ID del Pedido">
+                        <button class="btn btn-danger" onclick="rastrearPedido()">🔍 Buscar Historial</button>
+                    </div>
+                    <div class="border rounded p-3 bg-light" style="min-height: 200px;">
+                        <h6 class="border-bottom pb-2">Línea de Tiempo del Envío:</h6>
+                        <ul class="list-group list-group-flush" id="lista-rastreo">
+                            <li class="list-group-item text-muted">Ingresa un ID de pedido para ver su recorrido.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT: Comunicación asíncrona con el Backend (API REST) -->
+    <script>
+        // Conectado al puerto libre 8081 que configuramos
+        const API_URL = "http://localhost:8089/api";
+
+
+
+
+
+        async function cargarPedidos() {
+            try {
+                const response = await fetch(`${API_URL}/pedidos`);
+                const pedidos = await response.json();
+                const tabla = document.getElementById("tabla-pedidos");
+                tabla.innerHTML = "";
+
+                if(pedidos.length === 0) {
+                    tabla.innerHTML = `<tr><td colspan="4" class="text-center text-warning">Servidor conectado. Agrega datos en la base de datos de XAMPP para visualizarlos.</td></tr>`;
+                    return;
+                }
+
+                pedidos.forEach(p => {
+                    tabla.innerHTML += `
+                        <tr>
+                            <td>${p.id_pedido}</td>
+                            <td>Cliente #${p.id_cliente}</td>
+                            <td>$${p.total.toFixed(2)}</td>
+                            <td><button class="btn btn-sm btn-outline-danger" onclick="seleccionarPedido(${p.id_pedido})">Rastrear</button></td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                alert("Error al conectar con el servidor Java. Asegúrate de encender el proyecto.");
+            }
+        }
+
+        function seleccionarPedido(id) {
+            document.getElementById("input-id-pedido").value = id;
+            rastrearPedido();
+        }
+
+        async function rastrearPedido() {
+            const id = document.getElementById("input-id-pedido").value;
+            if(!id) return alert("Por favor ingresa un ID válido.");
+
+            try {
+                const response = await fetch(`${API_URL}/rastreo/${id}`);
+                const estados = await response.json();
+                const lista = document.getElementById("lista-rastreo");
+                lista.innerHTML = "";
+
+                if(estados.length === 0) {
+                    lista.innerHTML = `<li class="list-group-item text-warning">⚠️ No se encontraron eventos de ruta para este pedido.</li>`;
+                    return;
+                }
+
+                estados.forEach(e => {
+                    lista.innerHTML += `
+                        <li class="list-group-item">
+                            <strong>📦 Status:</strong> ${e.estado}<br>
+                            <small class="text-muted">📍 Lat: ${e.latitud} | Lon: ${e.longitud}</small>
+                        </li>
+                    `;
+                });
+            } catch (error) {
+                alert("Error al conectar con la API de rastreo.");
+            }
+        }
+    </script>
+</body>
+</html>
